@@ -8,36 +8,66 @@ from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 from pybricks.nxtdevices import ColorSensor, LightSensor
 
+# Variables that should be set by the user #################################################################
+############################################################################################################
+
 ev3 = EV3Brick()
 
-motorRight = Motor(Port.A)
-motorLeft = Motor(Port.B)
-motorNeedle = Motor(Port.C)
-UltrasonicSensor = UltrasonicSensor(Port.S3)
-TouchSensorRight = TouchSensor(Port.S1)
-TouchSensorBack = TouchSensor(Port.S4)
-LightSensor = LightSensor(Port.S2)
+left_motor = Motor(Port.D)
+right_motor = Motor(Port.A)
+balloon_motor = Motor(Port.B)
+ultrasonic_sensor = UltrasonicSensor(Port.S4)
+light_sensor = LightSensor(Port.S2)
+front_touch_sensor = TouchSensor(Port.S3)
+bottom_touch_sensor = TouchSensor(Port.S1)
 
-ev3.speaker.beep()
+robot = DriveBase(left_motor, right_motor, wheel_diameter=28, axle_track=165)
 
-Balloons = 1;
+Balloons = 3;
 
-robot = DriveBase(motorLeft, motorRight, wheel_diameter=28, axle_track=187)
+# Functions ################################################################################################
+############################################################################################################
+
+def initBalloonColor():
+    global needed_light_reflection
+    global init_light_ambient
+    needed_light_reflection = light_sensor.reflection()
+    init_light_ambient = light_sensor.ambient()
+    print('Reflection: ', needed_light_reflection)
+    print('Ambient: ', init_light_ambient)
+
+def driveToBar():
+    while not front_touch_sensor.pressed():
+        robot.drive(50, 0)
+    
+    robot.straight(-15)
+    robot.turn(80)
+    robot.straight(100)
+    robot.turn(10)
+
+def relReflection():
+    return needed_light_reflection + init_light_ambient - light_sensor.ambient()
 
 def destroy():
-    print(motorNeedle.angle())
-    motorNeedle.run_target(1000, -140)
-    motorNeedle.run_target(500, 0)
+    print(balloon_motor.angle())
+    balloon_motor.run_target(1000, -140)
+    balloon_motor.run_target(500, 0)
 
-while True:
-    if Balloons == 0:
-        print('Remaining Balloons: ', Balloons);
-        print('Destroyed all Balloons: ', Balloons);
-        break
-    destroy();
-    print('Remaining Balloons: ', Balloons);
-    Balloons = Balloons - 1
-    print(LightSensor.reflection())
+# Main Program #############################################################################################
+############################################################################################################
+
+initBalloonColor()
+driveToBar()
+
+while relReflection() - 8 >= light_sensor.reflection()  <= relReflection() + 8:
+    robot.drive(50, 0)
+
+robot.stop()
+
+print('Found Balloon')
+print('Reflection: ', light_sensor.reflection())
+print('Ambient: ', light_sensor.ambient())
+ev3.speaker.beep()
 
 
         
